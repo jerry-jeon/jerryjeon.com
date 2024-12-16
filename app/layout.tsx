@@ -67,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${space_grotesk.variable} scroll-smooth`}
       suppressHydrationWarning
     >
+      <script defer data-domain="jerryjeon.com" src="https://plausible.io/js/script.js"></script>
       <link
         rel="apple-touch-icon"
         sizes="76x76"
