@@ -19,7 +19,7 @@ const siteMetadata = {
   stickyNav: false,
   analytics: {
     plausibleAnalytics: {
-      plausibleDataDomain: 'jerryjeon.com',
+      plausibleDataDomain: 'www.jerryjeon.com',
     },
   },
   newsletter: {
