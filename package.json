@@ -10,7 +10,7 @@
     "analyze": "cross-env ANALYZE=true next build",
     "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts",
     "prepare": "husky",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@headlessui/react": "2.2.0",
