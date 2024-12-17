@@ -1,8 +1,8 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Jerry Jeon Blog',
+  title: "Jerry's Blog",
   author: 'Jerry Jeon',
-  headerTitle: 'Jerry',
+  headerTitle: "Jerry's blog",
   description: 'A blog about Jerry',
   language: 'en-us',
   theme: 'system', // system, dark or light

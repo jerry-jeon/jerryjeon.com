@@ -1,0 +1,13 @@
+diff --git a/node_modules/pliny/chunk-B6ZT6C4R.js b/node_modules/pliny/chunk-B6ZT6C4R.js
+index 6a5c990..9dbc664 100644
+--- a/node_modules/pliny/chunk-B6ZT6C4R.js
++++ b/node_modules/pliny/chunk-B6ZT6C4R.js
+@@ -7,7 +7,7 @@ var buttondownSubscribe = (email) => __async(void 0, null, function* () {
+   const buttondownRoute = `${API_URL}subscribers`;
+   const response = yield fetch(buttondownRoute, {
+     body: JSON.stringify({
+-      email
++      email_address: email
+     }),
+     headers: {
+       Authorization: `Token ${API_KEY}`,
