@@ -1,0 +1,119 @@
+---
+title: 'Basics of Debugging'
+date: '2025-08-03'
+tags: ['English']
+draft: false
+summary: 'Basics of Debugging'
+---
+
+# Basics of Deubgging
+
+> **One-line Summary:** Debugging is a systematic process of discovering the unknown by repeating: "distinguish between what's certain and uncertain → determine what to figure out next → expand the area of certainty."
+
+Debugging is one of the most crucial skills for developers. With LLMs writing code for us, this skill has become even more important. From my personal experience, there seems to be insufficient awareness about the need to systematically teach or learn debugging relative to its importance. Debugging is left entirely to individual experience and intuition.
+
+Most programming courses focus on creating programs that work on the first try. However, in real development—whether it's infrastructure setup, prompting, or coding—things rarely work perfectly on the first attempt. The ability to calmly solve problems one by one is essential regardless of the task at hand.
+
+## The Goal of Debugging
+
+The goal of debugging is clear: **to discover what we don't know**. It's the systematic process of answering the question "Why did this bug occur?"
+
+## The 3-Step Iterative Process of Debugging
+
+Debugging is a process of repeatedly asking these three questions:
+
+1. **Distinguish between uncertain and certain areas**
+   - What do we know for sure right now?
+   - Which parts are unclear?
+
+2. **Identify what needs to be determined to find the bug**
+   - What's the most important thing to check next?
+   - What information would help solve the problem?
+
+3. **Decide what to do to expand the area of certainty**
+   - Which tools should we use?
+   - What experiments should we try?
+
+### Important Principle: Write It Down
+
+You should be able to **clearly write down answers to these three questions**. While you don't need to write things down for simple situations where you're confident, when facing complex problems, take time to calmly organize these three aspects.
+
+There's a world of difference between explicitly writing things down and having vague thoughts in your head. Debugging without being able to answer these three questions is like randomly poking around hoping the problem will magically fix itself.
+
+## Core Debugging Practices
+
+### 1. Actually Read Error Messages
+
+**Why it matters:**
+- Most error messages contain crucial information
+- They're the most direct way to expand your area of certainty
+
+**Common mistakes:**
+People try to fix code without even reading the error message. Check if you're falling into these traps:
+- Vague fear of English
+- Lack of experience carefully reading error messages
+- Impatience to solve problems quickly
+
+**Real example:**
+```
+TypeError: Cannot read property 'name' of undefined
+```
+This message provides clear information that you tried to access the `name` property of an `undefined` object. Just finding which variable is `undefined` gives you a key clue to solving the problem.
+
+### 2. Master Debugging Tools
+
+**Basic preparation:**
+- Take time to learn how to use debugging tools in your IDE or development environment
+- Clearly understand the difference between Step Over and Step Into
+  - **Step Over**: Execute function calls in one go
+  - **Step Into**: Enter the function and execute line by line
+
+### 3. Simulate Workflow in Your Head
+
+**Key questions:**
+- "What happens when this function receives this argument?"
+- "Which branch will this conditional statement take?"
+
+**Important note:**
+Break things down as much as possible to understand them. Even when multiple functions are nested in one line, you should be able to understand exactly what's happening step by step.
+
+```javascript
+// Break down even code like this step by step
+const result = users.filter(u => u.age > 18).map(u => u.name).join(', ');
+```
+
+### 4. Re-verify What You Think Is Certain
+
+**Beware of assumptions:**
+Parts you thought were certain might be wrong.
+
+**Real examples:**
+- Thinking "only numbers come through this parameter" when strings actually come through
+- Assuming "this API always succeeds" when network errors occur
+- Believing "this array always has elements" when it's actually empty
+
+### 5. Distinguish Between Top-Down and Bottom-Up Debugging
+
+**Bottom-Up Debugging:**
+Start from where the problem occurred and expand the area of certainty
+
+*When to use:* When crashes or exceptions occur
+*Example:* Null pointer exception occurs → trace why that variable is null → check code that sets the variable
+
+**Top-Down Debugging:**
+Start from the program's entry point and expand certainty until reaching the problem
+
+*When to use:* When there's strange behavior without crashes
+*Example:* Calculation results differ from expectations → check input values → trace each calculation step
+
+### 6. Rubber Duck Debugging
+
+**Method:**
+Explain the problem situation in detail to a rubber duck or another person
+
+**Benefits:**
+- Problems become clear when you try to explain them logically
+- Solutions often emerge during the process of organizing thoughts verbally
+- Next steps to try naturally become apparent as thoughts get organized
+- If possible, having an actual person listen is best since they can ask questions or provide feedback.
+
