@@ -29,7 +29,7 @@
     "next-contentlayer2": "0.5.8",
     "next-themes": "^0.4.6",
     "patch-package": "^8.0.1",
-    "pliny": "0.4.1",
+    "pliny": "0.4.0",
     "postcss": "^8.5.8",
     "postinstall-postinstall": "^2.1.0",
     "react": "^19.1.0",
