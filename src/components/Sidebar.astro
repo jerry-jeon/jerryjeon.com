@@ -1,0 +1,73 @@
+---
+import { site } from '../site'
+import { getPosts, tagCounts } from '../lib/posts'
+
+interface Props {
+  active?: 'posts' | 'about'
+  activeTag?: string
+}
+
+const { active, activeTag } = Astro.props
+const tags = tagCounts(await getPosts())
+const nav = [
+  { key: 'posts', label: '글', href: '/' },
+  { key: 'about', label: '소개', href: '/about' },
+  { key: 'rss', label: 'RSS', href: '/feed.xml' },
+]
+---
+
+<aside class="side sidebar">
+  <div class="intro">
+    <a href="/" class="name">{site.title}</a>
+    <p>{site.description}</p>
+  </div>
+  <nav aria-label="사이트">
+    {
+      nav.map((n) => (
+        <a href={n.href} class:list={{ on: n.key === active && !activeTag }} aria-current={n.key === active && !activeTag ? 'page' : undefined}>
+          {n.label}
+        </a>
+      ))
+    }
+  </nav>
+  {
+    tags.length > 0 && (
+      <div class="tags">
+        <div class="label">Tags</div>
+        <ul>
+          {tags.map((t) => (
+            <li>
+              <a href={`/tags/${t.slug}`} class:list={{ on: t.slug === activeTag }} aria-current={t.slug === activeTag ? 'page' : undefined}>
+                {t.slug} <span>{t.count}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+</aside>
+
+<style>
+  .sidebar { display: flex; flex-direction: column; gap: 36px; }
+  .intro { display: flex; flex-direction: column; gap: 10px; }
+  .name { font-size: 20px; font-weight: 600; color: var(--text-strong); }
+  .intro p { margin: 0; font-size: 14px; line-height: 1.7; color: var(--muted); }
+  nav { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+  nav a { color: var(--text-soft); padding: 4px 0; }
+  nav a.on { color: var(--accent); }
+  .tags { display: flex; flex-direction: column; gap: 12px; }
+  .tags ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tags a {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    color: var(--text-soft);
+  }
+  .tags a span { color: var(--faint); }
+  .tags a.on { border-color: var(--accent); color: var(--accent); }
+  .tags a:hover { border-color: var(--accent); }
+</style>

@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/Base.astro'
+import Sidebar from '../components/Sidebar.astro'
+import PostList from '../components/PostList.astro'
+import { getPosts } from '../lib/posts'
+
+const posts = await getPosts()
+---
+
+<Base>
+  <div class="wrap columns">
+    <Sidebar active="posts" />
+    <main class="main">
+      <PostList posts={posts} />
+    </main>
+  </div>
+</Base>

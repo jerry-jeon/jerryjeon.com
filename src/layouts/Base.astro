@@ -1,0 +1,53 @@
+---
+import '../styles/global.css'
+import { site } from '../site'
+
+interface Props {
+  title?: string
+  description?: string
+  lang?: 'ko' | 'en'
+  noTrack?: boolean
+}
+
+const { title, description = site.description, lang = 'ko', noTrack = false } = Astro.props
+const pageTitle = title ? `${title} · ${site.title}` : site.title
+const canonical = new URL(Astro.url.pathname, site.url)
+const ogImage = new URL('/static/images/twitter-card.jpg', site.url)
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title ?? site.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#16181b" />
+    <link rel="icon" href="/static/favicons/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/static/favicons/apple-touch-icon.png" />
+    <link rel="alternate" type="application/rss+xml" title={site.title} href="/feed.xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+  </head>
+  <body>
+    <slot />
+    {
+      import.meta.env.PROD && !noTrack && (
+        <script is:inline>
+          navigator.sendBeacon?.('/api/hit', JSON.stringify({ p: location.pathname, r: document.referrer }))
+        </script>
+      )
+    }
+  </body>
+</html>

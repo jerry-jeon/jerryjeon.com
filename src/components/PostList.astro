@@ -1,0 +1,47 @@
+---
+import { excerpt, fmtDate, groupByYear, langOf, type Post } from '../lib/posts'
+
+interface Props {
+  posts: Post[]
+}
+
+const years = groupByYear(Astro.props.posts)
+---
+
+<div class="years">
+  {
+    years.map(([year, posts]) => (
+      <section>
+        <h2 class="mono year">{year}</h2>
+        <ul>
+          {posts.map((p) => (
+            <li>
+              <a href={`/blog/${p.id}`} lang={langOf(p)}>
+                <span class="row">
+                  <span class="title">{p.data.title}</span>
+                  <span class="mono meta">
+                    {fmtDate(p.data.date, false)} · {langOf(p)}
+                  </span>
+                </span>
+                {excerpt(p) && <span class="excerpt">{excerpt(p)}</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .years { display: flex; flex-direction: column; gap: 44px; }
+  .year { margin: 0 0 10px; font-size: 13px; font-weight: 400; color: var(--faint); }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  a { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; margin: 0 -18px; border-radius: 8px; }
+  a:hover { background: var(--surface); color: inherit; }
+  a:hover .title { color: var(--accent); }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .title { font-size: 18px; font-weight: 500; color: var(--text-strong); }
+  .meta { font-size: 12px; color: var(--faint); flex-shrink: 0; }
+  .excerpt { font-size: 14px; line-height: 1.6; color: var(--muted); }
+</style>

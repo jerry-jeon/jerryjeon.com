@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro'
+import Sidebar from '../../components/Sidebar.astro'
+import PostList from '../../components/PostList.astro'
+import { getPosts, tagCounts, tagSlug, type Post } from '../../lib/posts'
+
+export async function getStaticPaths() {
+  const posts = await getPosts()
+  return tagCounts(posts).map(({ slug }) => ({
+    params: { tag: slug },
+    props: { posts: posts.filter((p) => p.data.tags.some((t) => tagSlug(t) === slug)) },
+  }))
+}
+
+const { tag } = Astro.params
+const { posts } = Astro.props as { posts: Post[] }
+---
+
+<Base title={`#${tag}`}>
+  <div class="wrap columns">
+    <Sidebar activeTag={tag} />
+    <main class="main">
+      <PostList posts={posts} />
+    </main>
+  </div>
+</Base>

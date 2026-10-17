@@ -146,7 +146,13 @@ function convertWikilinks(body, publishedIndex) {
   })
 }
 
-function toMdx(fm, body, publishedIndex, file) {
+// `## 관련` sections are vault-only notes-to-self; drop them up to the next h1/h2.
+function stripVaultOnlySections(body) {
+  return body.replace(/^##\s+관련\s*\n[\s\S]*?(?=^#{1,2}\s|(?![\s\S]))/gm, '').trimEnd() + '\n'
+}
+
+function toMdx(fm, rawBody, publishedIndex, file) {
+  const body = stripVaultOnlySections(rawBody)
   const front = {
     title: fm?.title || titleOf(file),
     date: dateFor(fm),

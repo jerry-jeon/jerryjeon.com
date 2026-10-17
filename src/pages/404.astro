@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro'
+import Header from '../components/Header.astro'
+---
+
+<Base title="404" noTrack>
+  <div class="wrap">
+    <Header />
+    <main>
+      <p class="mono">404 — 없는 페이지예요.</p>
+      <a href="/">← 글 목록으로</a>
+    </main>
+  </div>
+</Base>
+
+<style>
+  main { margin-top: 80px; display: flex; flex-direction: column; gap: 12px; }
+  p { margin: 0; color: var(--muted); }
+  a { color: var(--accent); }
+</style>

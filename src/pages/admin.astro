@@ -1,0 +1,175 @@
+---
+import Base from '../layouts/Base.astro'
+import { db } from '../lib/db'
+import { getPosts } from '../lib/posts'
+
+export const prerender = false
+
+// Local only: `npm run admin`. Point TURSO_* in .env at the production DB to see real numbers.
+if (!import.meta.env.DEV) return new Response('Not found', { status: 404 })
+
+const RANGES = [7, 30, 90]
+const days = RANGES.includes(Number(Astro.url.searchParams.get('days'))) ? Number(Astro.url.searchParams.get('days')) : 30
+const dayList = Array.from({ length: days }, (_, i) => new Date(Date.now() - (days - 1 - i) * 86400000).toISOString().slice(0, 10))
+const since = dayList[0]
+
+const client = await db()
+const q = async (sql: string, limit?: number) =>
+  (await client.execute({ sql: limit ? `${sql} LIMIT ${limit}` : sql, args: [since] })).rows as Record<string, any>[]
+
+const [[totals], daily, pages, referrers, countries] = await Promise.all([
+  q('SELECT COUNT(*) AS views, COUNT(DISTINCT day || visitor) AS visitors FROM hits WHERE day >= ?'),
+  q('SELECT day, COUNT(*) AS views, COUNT(DISTINCT visitor) AS visitors FROM hits WHERE day >= ? GROUP BY day'),
+  q('SELECT path, COUNT(*) AS views, COUNT(DISTINCT day || visitor) AS visitors FROM hits WHERE day >= ? GROUP BY path ORDER BY views DESC', 20),
+  q("SELECT COALESCE(referrer, '(direct)') AS name, COUNT(*) AS views FROM hits WHERE day >= ? GROUP BY name ORDER BY views DESC", 10),
+  q("SELECT COALESCE(country, '??') AS name, COUNT(*) AS views FROM hits WHERE day >= ? GROUP BY name ORDER BY views DESC", 10),
+])
+
+const byDay = new Map(daily.map((r) => [r.day, r]))
+const series = dayList.map((day) => ({ day, views: Number(byDay.get(day)?.views ?? 0), visitors: Number(byDay.get(day)?.visitors ?? 0) }))
+const maxViews = Math.max(1, ...series.map((s) => s.views))
+const titles = new Map((await getPosts()).map((p) => [`/blog/${p.id}`, p.data.title]))
+const pageName = (path: string) => titles.get(path) ?? (path === '/' ? '홈' : path)
+const share = (n: number, rows: Record<string, any>[]) => `${(Number(n) / Math.max(1, Number(rows[0]?.views ?? 1))) * 100}%`
+const fmt = (n: unknown) => Number(n ?? 0).toLocaleString('ko-KR')
+const short = (day: string) => day.slice(5).replace('-', '.')
+---
+
+<Base title="Admin" noTrack>
+  <div class="wrap admin">
+    <header class="top">
+      <h1>Stats</h1>
+      <nav aria-label="기간">
+        {RANGES.map((r) => <a href={`?days=${r}`} class:list={{ on: r === days }} aria-current={r === days ? 'page' : undefined}>{r}일</a>)}
+      </nav>
+    </header>
+
+    <section class="tiles">
+      <div><span class="label">Page views</span><strong>{fmt(totals?.views)}</strong></div>
+      <div><span class="label">Visitors</span><strong>{fmt(totals?.visitors)}</strong></div>
+      <div><span class="label">Per day</span><strong>{fmt(Math.round(Number(totals?.views ?? 0) / days))}</strong></div>
+    </section>
+
+    <section class="card">
+      <h2 class="label">Daily page views</h2>
+      <div class="chart" role="img" aria-label={`최근 ${days}일 일별 페이지뷰`}>
+        <div class="ymax mono">{fmt(maxViews)}</div>
+        <div class="bars">
+          {
+            series.map((s) => (
+              <button type="button" class="bar" style={`--h: ${(s.views / maxViews) * 100}%`} data-day={s.day} data-views={s.views} data-visitors={s.visitors} aria-label={`${s.day}: ${s.views} views, ${s.visitors} visitors`}>
+                <span />
+              </button>
+            ))
+          }
+        </div>
+        <div class="xaxis mono">
+          <span>{short(dayList[0])}</span>
+          <span>{short(dayList[dayList.length - 1])}</span>
+        </div>
+        <div class="tip mono" hidden><strong></strong><span></span></div>
+      </div>
+      <details>
+        <summary class="mono">표로 보기</summary>
+        <table>
+          <thead><tr><th>날짜</th><th>Views</th><th>Visitors</th></tr></thead>
+          <tbody>{[...series].reverse().map((s) => <tr><td class="mono">{s.day}</td><td>{s.views}</td><td>{s.visitors}</td></tr>)}</tbody>
+        </table>
+      </details>
+    </section>
+
+    <div class="grid">
+      <section class="card wide">
+        <h2 class="label">Pages</h2>
+        <ol class="ranked">
+          {pages.map((r) => (
+            <li style={`--w: ${share(r.views, pages)}`}>
+              <a href={r.path} title={r.path}>{pageName(r.path)}</a>
+              <span class="mono">{fmt(r.views)}<small> / {fmt(r.visitors)}</small></span>
+            </li>
+          ))}
+          {pages.length === 0 && <li class="empty">아직 기록이 없어요.</li>}
+        </ol>
+      </section>
+      <section class="card">
+        <h2 class="label">Referrers</h2>
+        <ol class="ranked">
+          {referrers.map((r) => <li style={`--w: ${share(r.views, referrers)}`}><span>{r.name}</span><span class="mono">{fmt(r.views)}</span></li>)}
+          {referrers.length === 0 && <li class="empty">—</li>}
+        </ol>
+      </section>
+      <section class="card">
+        <h2 class="label">Countries</h2>
+        <ol class="ranked">
+          {countries.map((r) => <li style={`--w: ${share(r.views, countries)}`}><span>{r.name}</span><span class="mono">{fmt(r.views)}</span></li>)}
+          {countries.length === 0 && <li class="empty">—</li>}
+        </ol>
+      </section>
+    </div>
+  </div>
+</Base>
+
+<script>
+  const chart = document.querySelector<HTMLElement>('.chart')!
+  const tip = chart.querySelector<HTMLElement>('.tip')!
+  const show = (bar: HTMLElement) => {
+    tip.querySelector('strong')!.textContent = `${bar.dataset.views} views`
+    tip.querySelector('span')!.textContent = `${bar.dataset.day} · ${bar.dataset.visitors} visitors`
+    tip.hidden = false
+    const c = chart.getBoundingClientRect()
+    const b = bar.getBoundingClientRect()
+    const x = Math.min(Math.max(b.left + b.width / 2 - c.left, 70), c.width - 70)
+    tip.style.left = `${x}px`
+  }
+  chart.querySelectorAll<HTMLElement>('.bar').forEach((bar) => {
+    bar.addEventListener('pointerenter', () => show(bar))
+    bar.addEventListener('focus', () => show(bar))
+  })
+  chart.addEventListener('pointerleave', () => (tip.hidden = true))
+  chart.addEventListener('focusout', () => (tip.hidden = true))
+</script>
+
+<style>
+  .admin { display: flex; flex-direction: column; gap: 28px; }
+  .top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  h1 { margin: 0; font-size: 24px; font-weight: 600; color: var(--text-strong); }
+  .top nav { display: flex; gap: 6px; }
+  .top nav a { font-family: var(--mono); font-size: 13px; padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text-soft); }
+  .top nav a.on { border-color: var(--accent); color: var(--accent); }
+  h2 { margin: 0 0 16px; font-weight: 400; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tiles div { background: var(--surface); border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .tiles strong { font-size: 30px; font-weight: 600; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+
+  .card { background: var(--surface); border-radius: 8px; padding: 20px; min-width: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .grid .wide { grid-column: 1 / -1; }
+
+  .chart { position: relative; padding-left: 40px; }
+  .ymax { position: absolute; left: 0; top: -6px; font-size: 11px; color: var(--faint); }
+  .bars { height: 180px; display: flex; align-items: flex-end; gap: 2px; border-bottom: 1px solid var(--border-strong); background: linear-gradient(var(--border) 1px, transparent 1px) 0 0 / 100% 100% no-repeat; }
+  .bar { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; cursor: default; min-width: 0; }
+  .bar span { display: block; width: 100%; height: var(--h); min-height: 0; background: #c4862f; border-radius: 4px 4px 0 0; }
+  .bar:hover span, .bar:focus-visible span { background: var(--accent); }
+  .bar:focus-visible { outline: none; }
+  .xaxis { display: flex; justify-content: space-between; font-size: 11px; color: var(--faint); padding-top: 6px; }
+  .tip { position: absolute; top: -8px; transform: translate(-50%, -100%); background: var(--bg); border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 10px; font-size: 12px; display: flex; flex-direction: column; white-space: nowrap; pointer-events: none; }
+  .tip[hidden] { display: none; }
+  .tip strong { color: var(--text-strong); font-size: 13px; }
+  .tip span { color: var(--muted); }
+
+  details { margin-top: 16px; }
+  summary { font-size: 12px; color: var(--faint); cursor: pointer; }
+  table { margin-top: 10px; width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--faint); font-weight: 400; }
+
+  .ranked { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .ranked li { position: relative; display: flex; justify-content: space-between; gap: 12px; padding: 7px 10px; font-size: 14px; border-radius: 4px; z-index: 0; }
+  .ranked li::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w, 0); background: #2a2620; border-radius: 4px; z-index: -1; }
+  .ranked li > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ranked .mono { font-size: 13px; color: var(--text-strong); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .ranked small { color: var(--faint); }
+  .ranked .empty { color: var(--faint); }
+</style>

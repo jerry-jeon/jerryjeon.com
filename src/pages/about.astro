@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro'
+import Sidebar from '../components/Sidebar.astro'
+import { site } from '../site'
+---
+
+<Base title="소개">
+  <div class="wrap columns">
+    <Sidebar active="about" />
+    <main class="main about">
+      <img src="/static/images/avatar.png" alt="Jerry Jeon" width="96" height="96" />
+      <div class="prose">
+        <p>I am a Developer Advocate at Sendbird.</p>
+      </div>
+      <ul class="links">
+        {
+          site.links.map((l) => (
+            <li>
+              <a href={l.href} rel="me">{l.label}</a>
+            </li>
+          ))
+        }
+        <li><a href="mailto:jkj8790@gmail.com">Email</a></li>
+      </ul>
+    </main>
+  </div>
+</Base>
+
+<style>
+  .about { display: flex; flex-direction: column; gap: 28px; max-width: 680px; }
+  img { border-radius: 50%; }
+  .links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 20px; font-family: var(--mono); font-size: 14px; }
+  .links a { color: var(--text-soft); }
+  .links a:hover { color: var(--accent); }
+</style>

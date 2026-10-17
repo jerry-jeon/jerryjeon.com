@@ -1,0 +1,20 @@
+---
+import { site } from '../site'
+---
+
+<header class="top">
+  <a href="/" class="name">{site.title}</a>
+  <nav aria-label="사이트">
+    <a href="/">글</a>
+    <a href="/about">소개</a>
+    <a href="/feed.xml">RSS</a>
+  </nav>
+</header>
+
+<style>
+  .top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+  .name { font-size: 18px; font-weight: 600; color: var(--text-strong); }
+  nav { display: flex; gap: 22px; font-size: 15px; }
+  nav a { color: var(--text-soft); }
+  nav a:hover { color: var(--accent); }
+</style>
