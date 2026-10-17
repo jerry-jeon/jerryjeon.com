@@ -2,23 +2,24 @@
 /**
  * publish-from-vault — convert an Obsidian note into a blog MDX post.
  *
- * Source of truth is the Obsidian vault (synced to this Mac). Only notes whose
- * frontmatter has `publish: true` are eligible. Wikilinks to OTHER published
- * notes become real blog links; links to unpublished notes degrade to plain
- * text (no broken links). Writes to data/blog/ and commits locally — it does
- * NOT push (your blog is public; review, then push yourself or pass --push).
+ * Source of truth is the Obsidian vault (synced to this Mac). Post state is the
+ * folder under `Document Hub/`: notes in `Publish candidates/` get published,
+ * then moved to `Published/`. Wikilinks to published notes become real blog
+ * links; links to unpublished notes degrade to plain text (no broken links).
+ * `## 관련` sections are vault-only and dropped. Writes to data/blog/ and
+ * commits locally — it does NOT push (review, then push yourself or pass --push).
  *
  * Self-contained: no npm deps, runs with plain `node`.
  *
  * Usage:
- *   node scripts/publish-from-vault.mjs --all [--push] [--dry-run]
- *   node scripts/publish-from-vault.mjs --note "Document Hub/디버깅의 기초.md" [--dry-run]
+ *   node scripts/publish-from-vault.mjs --all [--push] [--dry-run]   # every candidate
+ *   node scripts/publish-from-vault.mjs --note "Document Hub/Publish candidates/x.md" [--dry-run]
  *
  * Vault-note frontmatter it understands:
- *   publish: true        # required to be eligible
  *   slug: my-post        # optional nice URL slug (else derived from title)
  *   lang: en | kr        # optional filename suffix (default: kr)
- *   title:, date:, summary:, tags:   # optional overrides (else derived)
+ *   title:, date:, summary:          # optional overrides (else derived)
+ * Vault tags stay in the vault; the post gets its language tag (Korean/English).
  */
 
 import { execFileSync } from 'node:child_process'
@@ -28,6 +29,8 @@ import path from 'node:path'
 const VAULT = process.env.VAULT_PATH || '/Users/jeongyeongju/Documents/Obsidian Vault'
 const BLOG_REPO = path.resolve(import.meta.dirname, '..')
 const BLOG_OUT = path.join(BLOG_REPO, 'data', 'blog')
+const CANDIDATES = path.join(VAULT, 'Document Hub', 'Publish candidates')
+const PUBLISHED = path.join(VAULT, 'Document Hub', 'Published')
 
 const args = process.argv.slice(2)
 const opt = (n) => args.includes(n)
@@ -112,7 +115,6 @@ function listNotes(dir) {
 }
 
 const titleOf = (file) => path.basename(file, '.md')
-const isPublished = (fm) => fm?.publish === true
 const langOf = (fm) => (fm?.lang === 'en' ? 'en' : 'kr')
 const slugFor = (fm, file) => (fm?.slug ? String(fm.slug) : slugify(fm?.title || titleOf(file)))
 
@@ -124,11 +126,11 @@ function summaryFor(fm, body) {
 
 const dateFor = (fm) => new Date(fm?.date || fm?.created || Date.now()).toISOString().slice(0, 10)
 
+// Published notes plus the ones about to be, so links between them resolve.
 function buildPublishedIndex(notes) {
   const index = new Map()
   for (const file of notes) {
     const { data } = parseFrontmatter(fs.readFileSync(file, 'utf8'))
-    if (!isPublished(data)) continue
     const entry = { slug: slugFor(data, file), lang: langOf(data) }
     index.set(titleOf(file), entry)
     if (data.title) index.set(String(data.title), entry)
@@ -156,7 +158,7 @@ function toMdx(fm, rawBody, publishedIndex, file) {
   const front = {
     title: fm?.title || titleOf(file),
     date: dateFor(fm),
-    tags: Array.isArray(fm?.tags) ? fm.tags : [],
+    tags: [langOf(fm) === 'en' ? 'English' : 'Korean'],
     draft: false,
     summary: summaryFor(fm, body),
   }
@@ -166,28 +168,24 @@ function toMdx(fm, rawBody, publishedIndex, file) {
 const git = (...a) => execFileSync('git', a, { cwd: BLOG_REPO, encoding: 'utf8' })
 
 function main() {
-  const allNotes = listNotes(VAULT)
-  const publishedIndex = buildPublishedIndex(allNotes)
-
   const noteArg = argVal('--note')
   let targets
   if (noteArg) {
     targets = [path.isAbsolute(noteArg) ? noteArg : path.join(VAULT, noteArg)]
   } else if (opt('--all')) {
-    targets = allNotes.filter((f) => isPublished(parseFrontmatter(fs.readFileSync(f, 'utf8')).data))
+    targets = listNotes(CANDIDATES)
   } else {
     console.error('Pass --all or --note "<path in vault>". Add --dry-run to preview.')
     process.exit(1)
   }
 
-  if (targets.length === 0) { console.log('No notes with `publish: true` found.'); return }
+  if (targets.length === 0) { console.log('No notes in Publish candidates/.'); return }
+  const publishedIndex = buildPublishedIndex([...listNotes(PUBLISHED), ...targets])
 
   const written = []
+  const moved = []
   for (const file of targets) {
     const { data, content } = parseFrontmatter(fs.readFileSync(file, 'utf8'))
-    if (noteArg && !isPublished(data)) {
-      console.warn(`⚠️  "${titleOf(file)}" is not marked publish: true — converting anyway (--note).`)
-    }
     const outName = `${slugFor(data, file)}_${langOf(data)}.mdx`
     const outPath = path.join(BLOG_OUT, outName)
     const mdx = toMdx(data, content, publishedIndex, file)
@@ -204,6 +202,7 @@ function main() {
     }
     fs.writeFileSync(outPath, mdx)
     written.push(`data/blog/${outName}`)
+    moved.push(file)
     console.log(`✓ wrote data/blog/${outName}  (from "${titleOf(file)}")`)
   }
 
@@ -211,6 +210,11 @@ function main() {
   git('add', ...written)
   git('commit', '-m', `publish: ${written.map((w) => path.basename(w)).join(', ')}`)
   console.log(`\n✓ committed ${written.length} post(s).`)
+  for (const file of moved) {
+    if (path.dirname(file) === PUBLISHED) continue
+    fs.renameSync(file, path.join(PUBLISHED, path.basename(file)))
+    console.log(`✓ moved "${titleOf(file)}" to Published/`)
+  }
   if (PUSH) { git('push'); console.log('✓ pushed — Vercel will deploy.') }
   else console.log('Not pushed. Review, then `git push` (or re-run with --push).')
 }

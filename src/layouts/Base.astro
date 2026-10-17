@@ -9,7 +9,7 @@ interface Props {
   noTrack?: boolean
 }
 
-const { title, description = site.description, lang = 'ko', noTrack = false } = Astro.props
+const { title, description, lang = 'ko', noTrack = false } = Astro.props
 const pageTitle = title ? `${title} · ${site.title}` : site.title
 const canonical = new URL(Astro.url.pathname, site.url)
 const ogImage = new URL('/static/images/twitter-card.jpg', site.url)
@@ -21,10 +21,10 @@ const ogImage = new URL('/static/images/twitter-card.jpg', site.url)
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
-    <meta name="description" content={description} />
+    {description && <meta name="description" content={description} />}
     <link rel="canonical" href={canonical} />
     <meta property="og:title" content={title ?? site.title} />
-    <meta property="og:description" content={description} />
+    {description && <meta property="og:description" content={description} />}
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta name="twitter:card" content="summary_large_image" />

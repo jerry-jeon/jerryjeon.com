@@ -3,7 +3,7 @@ import { site } from '../site'
 import { getPosts, tagCounts } from '../lib/posts'
 
 interface Props {
-  active?: 'posts' | 'about'
+  active?: 'posts'
   activeTag?: string
 }
 
@@ -11,7 +11,6 @@ const { active, activeTag } = Astro.props
 const tags = tagCounts(await getPosts())
 const nav = [
   { key: 'posts', label: '글', href: '/' },
-  { key: 'about', label: '소개', href: '/about' },
   { key: 'rss', label: 'RSS', href: '/feed.xml' },
 ]
 ---
@@ -19,7 +18,6 @@ const nav = [
 <aside class="side sidebar">
   <div class="intro">
     <a href="/" class="name">{site.title}</a>
-    <p>{site.description}</p>
   </div>
   <nav aria-label="사이트">
     {
@@ -52,7 +50,6 @@ const nav = [
   .sidebar { display: flex; flex-direction: column; gap: 36px; }
   .intro { display: flex; flex-direction: column; gap: 10px; }
   .name { font-size: 20px; font-weight: 600; color: var(--text-strong); }
-  .intro p { margin: 0; font-size: 14px; line-height: 1.7; color: var(--muted); }
   nav { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
   nav a { color: var(--text-soft); padding: 4px 0; }
   nav a.on { color: var(--accent); }

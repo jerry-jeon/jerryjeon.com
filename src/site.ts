@@ -1,6 +1,5 @@
 export const site = {
   title: 'Jerry Jeon',
-  description: '개발자. Obsidian에 쌓아둔 노트 중 꺼내놓을 만한 것들.',
   url: 'https://www.jerryjeon.com',
   links: [
     { label: 'GitHub', href: 'https://github.com/jerry-jeon' },
