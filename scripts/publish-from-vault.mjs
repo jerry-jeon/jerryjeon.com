@@ -19,7 +19,9 @@
  *   slug: my-post        # optional nice URL slug (else derived from title)
  *   lang: en | kr        # optional filename suffix (default: kr)
  *   title:, date:, summary:          # optional overrides (else derived)
- * Vault tags stay in the vault; the post gets its language tag (Korean/English).
+ *   blog_tags: [독후감]   # optional extra post tags
+ * Vault tags stay in the vault; the post gets its language tag (Korean/English)
+ * plus any blog_tags.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -120,7 +122,7 @@ const slugFor = (fm, file) => (fm?.slug ? String(fm.slug) : slugify(fm?.title ||
 
 function summaryFor(fm, body) {
   if (fm?.summary) return String(fm.summary)
-  const p = body.trim().split(/\n\s*\n/)[0]?.replace(/\s+/g, ' ').trim() || ''
+  const p = body.trim().split(/\n\s*\n/)[0]?.replace(/^\s*[-*]\s+/gm, '').replace(/\s+/g, ' ').trim() || ''
   return p.length > 180 ? p.slice(0, 177) + '…' : p
 }
 
@@ -158,7 +160,7 @@ function toMdx(fm, rawBody, publishedIndex, file) {
   const front = {
     title: fm?.title || titleOf(file),
     date: dateFor(fm),
-    tags: [langOf(fm) === 'en' ? 'English' : 'Korean'],
+    tags: [langOf(fm) === 'en' ? 'English' : 'Korean', ...[fm?.blog_tags ?? []].flat()],
     draft: false,
     summary: summaryFor(fm, body),
   }
